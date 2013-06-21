@@ -1,5 +1,119 @@
---Carla Maxey
---Chapter 14
+--SQL Code Examples
+--Mickie Maxey
+--More available upon request
+
+--Question 1. 
+CREATE VIEW InvoiceBasic 
+AS
+	SELECT TOP 100 PERCENT VendorName, InvoiceNumber, InvoiceTotal	
+	FROM Vendors JOIN Invoices
+		ON Vendors.VendorID = Invoices.VendorID
+	WHERE VendorName LIKE '[NOP]%'
+	ORDER BY VendorName
+	
+
+--Question 2
+
+CREATE VIEW Top10PaidInvoices
+AS
+	SELECT VendorName, MAX(InvoiceDate) AS LastInvoice, SUM(InvoiceTotal) AS SumOfInvoices
+	FROM Invoices JOIN Vendors
+		ON Invoices.VendorID = Vendors.VendorID
+	WHERE InvoiceTotal - PaymentTotal - CreditTotal = 0
+	GROUP BY VendorName
+
+--Question 3
+CREATE VIEW VendorAddress
+AS
+	SELECT VendorID, VendorAddress1, VendorAddress2, VendorCity, VendorState, VendorZipCode
+	FROM Vendors
+	
+SELECT * FROM VendorAddress
+WHERE VendorID = 4
+
+UPDATE VendorAddress
+SET VendorAddress2 = RIGHT(VendorAddress1,7), VendorAddress1 = SUBSTRING(VendorAddress1,1,LEN(VendorAddress1) - 8)
+WHERE VendorID = 4	
+
+SELECT * FROM VendorAddress
+WHERE VendorID = 4
+
+
+--Question 4
+
+SELECT *
+FROM sys.foreign_key_columns
+
+
+
+USE AP
+
+DECLARE @BalanceDue money
+SET @BalanceDue = (SELECT SUM(InvoiceTotal-PaymentTotal-CreditTotal) FROM Invoices)
+IF @BalanceDue > 10000
+BEGIN
+	 SELECT VendorName, InvoiceNumber, InvoiceDueDate, InvoiceTotal-PaymentTotal-CreditTotal AS BalanceDue
+	 FROM Invoices JOIN Vendors
+	 ON Invoices.VendorID = Vendors.VendorID
+	 WHERE InvoiceTotal-PaymentTotal-CreditTotal > 0
+	 ORDER BY InvoiceDueDate DESC
+END	 
+ELSE
+	PRINT 'Balance due is less than $10000'	
+
+
+--Question 2
+
+USE AP
+
+IF OBJECT_ID('TempTable') IS NOT NULL
+	DROP TABLE TempTable
+GO
+
+SELECT VendorName, FirstInvoiceDate, InvoiceTotal
+INTO #TempTable
+FROM Invoices JOIN
+	(SELECT VendorID, MIN(InvoiceDate) AS FirstInvoiceDate
+	 FROM Invoices
+	 GROUP BY VendorID) AS FirstInvoice
+ON (Invoices.VendorID = FirstInvoice.VendorID AND
+	Invoices.InvoiceDate = FirstInvoice.FirstInvoiceDate)
+JOIN Vendors
+ON Invoices.VendorID = Vendors.VendorID
+ORDER BY VendorName, FirstInvoiceDate
+
+
+--Question 3
+
+USE AP
+GO
+
+IF OBJECT_ID('ThisView') IS NOT NULL
+DROP VIEW ThisView
+GO
+
+CREATE VIEW ThisView AS
+
+SELECT VendorName, FirstInvoiceDate, InvoiceTotal
+FROM Invoices JOIN
+	(SELECT VendorID, MIN(InvoiceDate) AS FirstInvoiceDate
+	 FROM Invoices
+	 GROUP BY VendorID) AS FirstInvoice
+ON (Invoices.VendorID = FirstInvoice.VendorID AND
+	Invoices.InvoiceDate = FirstInvoice.FirstInvoiceDate)
+JOIN Vendors
+ON Invoices.VendorID = Vendors.VendorID
+
+--Question 4
+
+SELECT sysobjects.Name, sysindexes.Rows
+FROM sysobjects
+JOIN sysindexes
+ON sysobjects.id = sysindexes.id
+WHERE type = 'U'
+AND sysindexes.IndId < 2
+ORDER BY
+sysobjects.Name
 
 --Question 1
 USE AP
@@ -171,6 +285,25 @@ BEGIN
   RAISERROR ('Nulls exceeded',11,1)
   ROLLBACK TRAN
 END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
